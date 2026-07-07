@@ -1,0 +1,22 @@
+# Build artifacts
+ios/build/
+ios/DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+Payload/
+*.ipa
+
+# Dependencies (fetched/installed, not committed)
+node_modules/
+node-runtime/vendor/
+
+# Large prebuilt binary frameworks (obtained separately)
+ios/Frameworks/*.xcframework
+
+# Generated bundle payloads (produced by scripts/)
+ios/Resources/nodejs/
+ios/Resources/python/
+
+# Misc
+.DS_Store
+*.log

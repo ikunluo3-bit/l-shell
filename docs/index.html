@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="L Shell — a development terminal that runs locally on iOS, the first on-device implementation of Claude Code.">
+<title>L Shell — Capabilities</title>
+<style>
+  /* ───────── tokens ───────── */
+  :root {
+    --bg: #08090d; --panel: #0d1117; --panel-2: #12181f;
+    --edge: #1d2632; --edge-soft: #161d26;
+    --ink: #d6e0ea; --dim: #8494a5; --faint: #55626f;
+    --amber: #f0a848; --amber-hi: #ffc978; --cyan: #45cfbf; --green: #55b962; --red: #dd5049;
+    --glow: rgba(240,168,72,.38); --glow-soft: rgba(240,168,72,.14);
+    --scan: .3;
+    --vignette: radial-gradient(1100px 520px at 50% -80px, rgba(240,168,72,.055), transparent 62%);
+    --sel-bg: #f0a848; --sel-ink: #0a0c10; --status-bg: #0b0f14;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ebe6d9; --panel: #f5f1e7; --panel-2: #eee9db;
+      --edge: #d3cab4; --edge-soft: #ddd5c2;
+      --ink: #23262c; --dim: #5b6470; --faint: #90897a;
+      --amber: #a3620f; --amber-hi: #7d4a08; --cyan: #0e7d74; --green: #327c3c; --red: #b3382f;
+      --glow: transparent; --glow-soft: transparent; --scan: 0; --vignette: none;
+      --sel-bg: #a3620f; --sel-ink: #f5f1e7; --status-bg: #23262c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#08090d; --panel:#0d1117; --panel-2:#12181f; --edge:#1d2632; --edge-soft:#161d26;
+    --ink:#d6e0ea; --dim:#8494a5; --faint:#55626f;
+    --amber:#f0a848; --amber-hi:#ffc978; --cyan:#45cfbf; --green:#55b962; --red:#dd5049;
+    --glow:rgba(240,168,72,.38); --glow-soft:rgba(240,168,72,.14); --scan:.3;
+    --vignette:radial-gradient(1100px 520px at 50% -80px, rgba(240,168,72,.055), transparent 62%);
+    --sel-bg:#f0a848; --sel-ink:#0a0c10; --status-bg:#0b0f14;
+  }
+  :root[data-theme="light"] {
+    --bg:#ebe6d9; --panel:#f5f1e7; --panel-2:#eee9db; --edge:#d3cab4; --edge-soft:#ddd5c2;
+    --ink:#23262c; --dim:#5b6470; --faint:#90897a;
+    --amber:#a3620f; --amber-hi:#7d4a08; --cyan:#0e7d74; --green:#327c3c; --red:#b3382f;
+    --glow:transparent; --glow-soft:transparent; --scan:0; --vignette:none;
+    --sel-bg:#a3620f; --sel-ink:#f5f1e7; --status-bg:#23262c;
+  }
+
+  /* ───────── language switch (dual-span, CSS-only render) ───────── */
+  html[lang="en"] .zh { display: none !important; }
+  html:not([lang="en"]) .en { display: none !important; }
+
+  /* ───────── base ───────── */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--vignette), var(--bg); color: var(--ink);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased; padding-bottom: 58px;
+  }
+  ::selection { background: var(--sel-bg); color: var(--sel-ink); }
+  .scan-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 40;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 1px, transparent 1px 3px);
+    opacity: calc(var(--scan) * .28);
+  }
+  .session { max-width: 940px; margin: 0 auto; padding: clamp(18px, 4vw, 48px) clamp(14px, 4vw, 36px) 40px; }
+
+  /* ───────── window chrome ───────── */
+  .chrome {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    background: var(--panel-2); border: 1px solid var(--edge); border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+  .chrome-dots { display: flex; gap: 7px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: var(--red); } .dot.y { background: var(--amber); } .dot.g { background: var(--green); }
+  .chrome-title { text-align: center; font-size: 11.5px; color: var(--faint); letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chrome-ctl { display: flex; gap: 6px; justify-self: end; }
+  .ctl {
+    font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: var(--dim); background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 5px; padding: 3px 9px; cursor: pointer; line-height: 1.35; min-width: 32px;
+    transition: color .12s, border-color .12s, box-shadow .12s;
+  }
+  .ctl:hover, .ctl:focus-visible { color: var(--amber-hi); border-color: var(--amber); box-shadow: 0 0 10px var(--glow-soft); outline: none; }
+  #themeIco { font-size: 12.5px; display: inline-block; line-height: 1; }
+  @media (max-width: 520px) { .chrome-title { font-size: 10px; } }
+  .screen {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 0 0 10px 10px;
+    padding: clamp(20px, 4vw, 42px) clamp(16px, 4vw, 42px) clamp(24px, 4vw, 40px);
+    box-shadow: 0 30px 80px -40px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.015) inset;
+  }
+
+  /* ───────── hero ───────── */
+  .ps1 { color: var(--dim); font-size: 13px; margin: 0 0 20px; }
+  .ps1 .user { color: var(--cyan); } .ps1 .path { color: var(--green); }
+  .type-cmd {
+    display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: bottom;
+    width: 21ch; color: var(--ink);
+    animation: typing 1.2s steps(21) .35s backwards;
+  }
+  @keyframes typing { from { width: 0; } }
+  .cursor {
+    display: inline-block; width: .62em; height: 1.1em;
+    background: var(--amber); margin-left: 2px; vertical-align: -3px;
+    animation: blink 1.1s step-end infinite; box-shadow: 0 0 8px var(--glow);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .figlet {
+    font-size: min(1.85vw, 14px); line-height: 1.18; color: var(--amber);
+    text-shadow: 0 0 18px var(--glow), 0 0 2px var(--glow);
+    margin: 0 0 20px; overflow: hidden; user-select: none;
+    animation: power-on 1.5s ease .35s backwards;
+  }
+  @media (max-width: 430px) { .figlet { font-size: 2.1vw; } }
+  /* CRT power-on: dark → first flash → dip → steady. One-shot. */
+  @keyframes power-on {
+    0% { opacity: 0; transform: translateY(8px); }
+    55% { opacity: 0; transform: translateY(8px); }
+    62% { opacity: .9; transform: none; }
+    68% { opacity: .25; }
+    76% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  .hero-copy { animation: rise .55s ease 1.35s backwards; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .tagline { font-size: clamp(14.5px, 2.1vw, 17.5px); font-weight: 700; margin: 0 0 8px; max-width: 62ch; text-wrap: balance; }
+  .tagline em { font-style: normal; color: var(--amber); }
+  .subtag { font-size: 12.5px; color: var(--dim); max-width: 70ch; margin: 0; }
+  .subtag code { color: var(--faint); }
+
+  .statrow {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    margin-top: 26px; border: 1px solid var(--edge); border-radius: 8px; overflow: hidden;
+    animation: rise .55s ease 1.5s backwards;
+  }
+  @media (max-width: 560px) { .statrow { grid-template-columns: repeat(2, 1fr); } .stat:nth-child(-n+2){ border-bottom:1px solid var(--edge-soft);} }
+  .stat { padding: 14px 16px 12px; background: var(--panel-2); }
+  .stat + .stat { border-left: 1px solid var(--edge-soft); }
+  @media (max-width: 560px) { .stat:nth-child(3) { border-left: 0; } }
+  .stat b { display: block; font-size: 24px; font-weight: 700; line-height: 1; color: var(--amber); font-variant-numeric: tabular-nums; text-shadow: 0 0 14px var(--glow-soft); }
+  .stat span { display: block; font-size: 11px; color: var(--faint); margin-top: 6px; letter-spacing: .05em; }
+
+  /* ───────── pillar panes ───────── */
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 34px 0 8px; }
+  @media (max-width: 680px) { .pillars { grid-template-columns: 1fr; } }
+  .pane { position: relative; border: 1px solid var(--edge); border-radius: 8px; padding: 20px 16px 15px; background: var(--panel-2); }
+  .pane-tab { position: absolute; top: -9px; left: 12px; background: var(--panel-2); padding: 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+  .pane.local .pane-tab { color: var(--amber); } .pane.remote .pane-tab { color: var(--cyan); } .pane.ai .pane-tab { color: var(--green); }
+  .pane p { margin: 0; font-size: 12.5px; color: var(--dim); }
+  .pane p b { color: var(--ink); font-weight: 600; }
+
+  /* ───────── section rules ───────── */
+  section { margin-top: 46px; }
+  .rule { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .rule::before, .rule::after { content: ""; height: 1px; background: var(--edge); }
+  .rule::before { width: 22px; }
+  .rule::after { flex: 1; transform: scaleX(0); transform-origin: left; transition: transform .7s ease .05s; }
+  .rule.seen::after { transform: scaleX(1); }
+  .rule h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .16em; color: var(--amber); text-shadow: 0 0 12px var(--glow-soft); white-space: nowrap; }
+  .rule .sub { font-size: 12px; color: var(--faint); letter-spacing: .08em; white-space: nowrap; }
+  .sec-note { font-size: 11.5px; color: var(--faint); margin: 6px 0 18px 34px; }
+
+  /* ───────── native stack + trade-off table ───────── */
+  .punch { margin: 0 0 16px 34px; font-size: 13px; color: var(--ink); max-width: 74ch; }
+  .punch b { color: var(--amber); text-shadow: 0 0 10px var(--glow-soft); }
+  .stack { margin: 0 0 22px 34px; border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; }
+  .layer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--edge-soft); background: var(--panel-2); font-size: 12.5px; }
+  .layer:last-child { border-bottom: 0; }
+  .layer .n { color: var(--ink); }
+  .layer .n .tree { color: var(--faint); }
+  .layer .n small { color: var(--faint); font-size: 11px; }
+  .badge { font-size: 10px; padding: 1.5px 8px; border-radius: 4px; border: 1px solid; letter-spacing: .08em; white-space: nowrap; font-weight: 700; }
+  .badge.native { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 55%, var(--edge)); text-shadow: 0 0 8px var(--glow-soft); }
+  .badge.swift { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, var(--edge)); }
+  .badge.js { color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--edge)); }
+
+  .vs-wrap { margin-left: 34px; overflow-x: auto; border: 1px solid var(--edge); border-radius: 8px; }
+  table.vs { border-collapse: collapse; width: 100%; min-width: 700px; font-size: 12px; }
+  .vs th { text-align: left; padding: 9px 14px; color: var(--cyan); font-size: 10.5px; letter-spacing: .12em; font-weight: 700; border-bottom: 1px solid var(--edge); background: var(--panel-2); white-space: nowrap; }
+  .vs td { padding: 11px 14px; border-bottom: 1px solid var(--edge-soft); color: var(--dim); vertical-align: top; }
+  .vs tr:last-child td { border-bottom: 0; }
+  .vs td.who { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .vs tr.us { background: color-mix(in srgb, var(--amber) 7%, transparent); }
+  .vs tr.us td.who { color: var(--amber); text-shadow: 0 0 10px var(--glow-soft); }
+  .vs-foot { margin: 8px 0 0 34px; font-size: 11px; color: var(--faint); max-width: 78ch; }
+
+  /* ───────── demo recording ───────── */
+  .demo { border: 1px solid var(--edge); border-radius: 8px; background: var(--panel-2); padding: 16px 0; overflow-x: auto; margin-left: 34px; }
+  .demo pre { margin: 0; font-size: 12.5px; line-height: 1.85; min-width: max-content; padding: 0 18px; }
+  .demo .p { color: var(--cyan); user-select: none; }
+  .demo .c { color: var(--ink); }
+  .demo .o { color: var(--dim); }
+  .demo .cm { color: var(--green); }
+  .demo .hl { color: var(--amber); }
+
+  /* ───────── live tty ───────── */
+  .tty { margin: 14px 0 0 34px; border: 1px solid var(--edge); border-radius: 8px; background: var(--panel-2); padding: 13px 16px; cursor: text; }
+  .tty:focus-within { border-color: color-mix(in srgb, var(--amber) 45%, var(--edge)); box-shadow: 0 0 16px var(--glow-soft); }
+  .tty-out { font-size: 12.5px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; }
+  .tty-out .l-in { color: var(--ink); }
+  .tty-out .l-in::before { content: "guest@lshell ~ $ "; color: var(--cyan); }
+  .tty-out .l-out { color: var(--dim); }
+  .tty-out .l-err { color: var(--red); }
+  .tty-out .l-hint { color: var(--faint); }
+  .tty-out .l-ok { color: var(--green); }
+  .tty-row { display: flex; align-items: baseline; gap: 0; }
+  .tty-ps { color: var(--cyan); white-space: nowrap; user-select: none; }
+  .tty-input { flex: 1; min-width: 50px; background: transparent; border: 0; outline: none; color: var(--ink); font: inherit; font-size: 12.5px; caret-color: var(--amber); padding: 0 0 0 1ch; }
+  .tty-input::placeholder { color: var(--faint); opacity: .8; }
+  @media (max-width: 640px) { .tty-input { font-size: 16px; } .tty-out { font-size: 13px; } }
+
+  /* ───────── man entries ───────── */
+  .man { margin-left: 34px; }
+  .entry { padding: 15px 0 13px; border-bottom: 1px solid var(--edge-soft); }
+  .entry:last-child { border-bottom: 0; }
+  .entry-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .entry-name { font-size: 14.5px; font-weight: 700; color: var(--amber); text-shadow: 0 0 10px var(--glow-soft); }
+  .entry-name i { font-style: normal; color: var(--faint); font-weight: 400; }
+  .entry-meta { font-size: 11px; color: var(--faint); letter-spacing: .04em; }
+  .entry-desc { font-size: 12.8px; color: var(--dim); margin: 7px 0 0; max-width: 76ch; }
+  .entry-desc b { color: var(--ink); font-weight: 600; }
+  .entry-list { margin: 8px 0 0; font-size: 11.8px; color: var(--faint); line-height: 1.9; word-spacing: .45em; max-width: 76ch; }
+
+  /* ───────── ssh / limits chips (small sets only) ───────── */
+  .grp { margin: 0 0 18px 34px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--edge-soft); border-radius: 5px; padding: 2.5px 9px; cursor: pointer; white-space: nowrap; transition: border-color .12s, color .12s, box-shadow .12s; }
+  .chip:hover, .chip:focus-visible { border-color: var(--amber); color: var(--amber-hi); box-shadow: 0 0 10px var(--glow-soft); outline: none; }
+  .chip.hot { border-color: color-mix(in srgb, var(--amber) 55%, var(--edge)); color: var(--amber); }
+  .chip.dead { color: var(--faint); border-style: dashed; text-decoration: line-through; cursor: default; }
+  .chip.dead:hover { border-color: var(--edge-soft); color: var(--faint); box-shadow: none; }
+
+  /* ───────── coreutils as ls output ───────── */
+  .bin { margin-left: 34px; font-size: 12.5px; }
+  .bin-grp { margin-bottom: 16px; }
+  .bin-cm { color: var(--faint); margin-bottom: 5px; font-size: 11.5px; }
+  .bin-cm b { color: var(--cyan); font-weight: 700; letter-spacing: .1em; }
+  .cmdcols { columns: 8.5em auto; column-gap: 1.6em; max-width: 72ch; }
+  .cmd { display: block; color: var(--dim); cursor: pointer; padding: 1px 0; break-inside: avoid; transition: color .1s; }
+  .cmd:hover, .cmd:focus-visible { color: var(--amber-hi); text-decoration: underline; text-underline-offset: 3px; outline: none; }
+
+  /* ───────── roadmap ───────── */
+  .road { margin-left: 34px; }
+  .road-item { display: flex; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--edge-soft); font-size: 12.5px; }
+  .road-item:last-child { border-bottom: 0; }
+  .road-item .what { color: var(--dim); }
+  .road-item .what b { color: var(--ink); font-weight: 600; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 1.5px 8px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+  .tag.tested { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, var(--edge)); }
+  .tag.proto { color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--edge)); }
+  .tag.plan { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 50%, var(--edge)); }
+  .tag.research { color: var(--faint); border-color: var(--edge); }
+
+  /* ───────── honest wall ───────── */
+  .wall { margin-left: 34px; border: 1px dashed var(--edge); border-radius: 8px; padding: 16px 18px; }
+  .wall p { margin: 12px 0 0; font-size: 12.5px; color: var(--dim); max-width: 76ch; }
+  .wall p b { color: var(--ink); }
+  .wall .why { color: var(--red); font-weight: 700; letter-spacing: .05em; }
+
+  /* ───────── colophon + statusline ───────── */
+  .colophon { margin: 42px 0 0 34px; padding-top: 18px; border-top: 1px solid var(--edge-soft); font-size: 11.5px; color: var(--faint); line-height: 1.9; }
+  .colophon b { color: var(--dim); font-weight: 600; }
+
+  .statusline {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; align-items: stretch;
+    background: var(--status-bg); border-top: 1px solid var(--edge);
+    font-size: 11px; line-height: 30px; height: 31px; color: var(--dim); user-select: none;
+  }
+  .seg { padding: 0 12px; white-space: nowrap; }
+  .seg.name { background: var(--amber); color: var(--sel-ink); font-weight: 700; }
+  .seg.winlist { flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--faint); }
+  .seg.winlist .w { margin-right: 10px; }
+  .seg.winlist .w.on { color: var(--amber); }
+  .seg.langbtn { cursor: pointer; color: var(--cyan); border-left: 1px solid var(--edge); font-weight: 700; letter-spacing: .06em; }
+  .seg.langbtn:hover { color: var(--amber-hi); }
+  .seg.right { color: var(--faint); border-left: 1px solid var(--edge); }
+  @media (max-width: 720px) { .seg.winlist { visibility: hidden; } }
+  @media (max-width: 480px) { .seg.right { display: none; } .seg.winlist { display: none; } .seg.name { flex: 1; } }
+
+  .toast {
+    position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: var(--panel-2); border: 1px solid var(--amber); color: var(--amber-hi);
+    font-size: 11.5px; padding: 5px 14px; border-radius: 6px; z-index: 60;
+    opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s;
+    box-shadow: 0 0 18px var(--glow-soft);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .type-cmd, .figlet, .hero-copy, .statrow { animation: none; }
+    .cursor { animation: none; }
+    .rule::after { transition: none; transform: scaleX(1); }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scan-overlay" aria-hidden="true"></div>
+
+<div class="session">
+  <div class="chrome">
+    <div class="chrome-dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+    <span class="chrome-title">you@ipad : ~/workspace — L Shell — 100×38</span>
+    <div class="chrome-ctl">
+      <button class="ctl" id="langTop" type="button" aria-label="switch language / 切换语言"><span class="zh">EN</span><span class="en">中</span></button>
+      <button class="ctl" id="themeTop" type="button" aria-label="switch theme / 切换明暗"><span id="themeIco">☾</span></button>
+    </div>
+  </div>
+  <div class="screen">
+
+    <!-- ═══════════ hero ═══════════ -->
+    <p class="ps1"><span class="user">you@ipad</span> <span class="path">~/workspace</span> $ <span class="type-cmd">lshell --capabilities</span><span class="cursor" aria-hidden="true"></span></p>
+
+    <pre class="figlet" role="img" aria-label="L SHELL">
+██╗     ███████╗██╗  ██╗███████╗██╗     ██╗
+██║     ██╔════╝██║  ██║██╔════╝██║     ██║
+██║     ███████╗███████║█████╗  ██║     ██║
+██║     ╚════██║██╔══██║██╔══╝  ██║     ██║
+███████╗███████║██║  ██║███████╗███████╗███████╗
+╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝</pre>
+
+    <div class="hero-copy">
+      <p class="tagline">
+        <span class="zh">在 iOS 设备本地运行的开发终端。<em>Claude Code 的第一个设备端实现</em>。</span>
+        <span class="en">A development terminal that runs locally on iOS — <em>the first on-device implementation of Claude Code</em>.</span>
+      </p>
+      <p class="subtag">
+        <span class="zh">本地工具链、SSH、AI CLI 运行在同一进程内:V8 与 CPython 以 ARM64 机器码嵌入 —— <code>零模拟 · 零 WASM · 无远程依赖</code></span>
+        <span class="en">Local toolchain, SSH and an AI CLI in one process: V8 and CPython embedded as ARM64 machine code — <code>no emulation · no WASM · no remote dependency</code></span>
+      </p>
+    </div>
+
+    <div class="statrow">
+      <div class="stat"><b>90+</b><span class="zh">SHELL 命令</span><span class="en">SHELL COMMANDS</span></div>
+      <div class="stat"><b>4</b><span class="zh">语言运行时</span><span class="en">LANGUAGE RUNTIMES</span></div>
+      <div class="stat"><b>6</b><span class="zh">SSH 远程工具</span><span class="en">SSH TOOLS</span></div>
+      <div class="stat"><b>1</b><span class="zh">AI 编码 CLI</span><span class="en">AI CODING CLI</span></div>
+    </div>
+
+    <div class="pillars">
+      <div class="pane local">
+        <span class="pane-tab">LOCAL</span>
+        <p><span class="zh"><b>git · npm · python3 · pip</b> 与约 90 个 coreutils 在设备上运行,离线可用。</span><span class="en"><b>git · npm · python3 · pip</b> and ~90 coreutils run on the device, offline.</span></p>
+      </div>
+      <div class="pane remote">
+        <span class="pane-tab">REMOTE</span>
+        <p><span class="zh"><b>SSH 套件</b>:一次性命令、交互式远程终端、文件传输、密钥部署。</span><span class="en"><b>SSH suite</b>: one-shot commands, a live remote terminal, file transfer, key deployment.</span></p>
+      </div>
+      <div class="pane ai">
+        <span class="pane-tab">AI</span>
+        <p><span class="zh"><b>官方 Claude Code CLI</b>,在同一个终端里对本地与远程代码工作。</span><span class="en">The official <b>Claude Code CLI</b>, working on local and remote code from the same terminal.</span></p>
+      </div>
+    </div>
+
+    <!-- ═══════════ native ═══════════ -->
+    <section id="native">
+      <div class="rule"><h2>NATIVE</h2><span class="sub"><span class="zh">运行时以 ARM64 机器码进程内嵌入</span><span class="en">runtimes embedded in-process as ARM64 machine code</span></span></div>
+      <p class="sec-note"><span class="zh">在 iOS 的约束下,每个终端项目都选了自己的路线 —— L Shell 选择原生运行时进程内嵌入。</span><span class="en">Under iOS constraints, every terminal project picks a lane — L Shell embeds native runtimes in-process.</span></p>
+
+      <p class="punch">
+        <span class="zh"><b>V8、CPython、OpenSSL 以 ARM64 机器码在进程内运行。</b>JS 由 V8 解释器执行(iOS 不允许 JIT);Python C 扩展、加密、压缩、SQLite 是原生速度。</span>
+        <span class="en"><b>V8, CPython and OpenSSL run in-process as ARM64 machine code.</b> JS is interpreted by V8 (iOS forbids JIT); Python C extensions, crypto, compression and SQLite run at native speed.</span>
+      </p>
+
+      <div class="stack">
+        <div class="layer"><span class="n">SwiftTerm <span class="zh">终端模拟器</span><span class="en">terminal emulator</span></span><span class="badge swift">SWIFT</span></div>
+        <div class="layer"><span class="n">nodejs-mobile · V8 <small>(Node 18.19.1<span class="zh">,进程内</span><span class="en">, in-process</span>)</small></span><span class="badge native">ARM64 NATIVE</span></div>
+        <div class="layer"><span class="n"><span class="tree">├─</span> just-bash · coreutils ×90</span><span class="badge js"><span class="zh">纯 JS · 进程内</span><span class="en">PURE JS · IN-PROC</span></span></div>
+        <div class="layer"><span class="n"><span class="tree">├─</span> isomorphic-git · npm · ssh2</span><span class="badge js"><span class="zh">纯 JS · 进程内</span><span class="en">PURE JS · IN-PROC</span></span></div>
+        <div class="layer"><span class="n"><span class="tree">└─</span> N-API → CPython 3.13 <small>(68 <span class="zh">个 C 扩展</span><span class="en">C extensions</span> .so)</small></span><span class="badge native">ARM64 NATIVE</span></div>
+        <div class="layer"><span class="n">node:crypto → OpenSSL 3</span><span class="badge native">ARM64 NATIVE</span></div>
+      </div>
+
+      <div class="vs-wrap">
+        <table class="vs">
+          <thead>
+            <tr>
+              <th><span class="zh">路线</span><span class="en">APPROACH</span></th>
+              <th><span class="zh">代表</span><span class="en">PROJECTS</span></th>
+              <th><span class="zh">优势</span><span class="en">STRENGTHS</span></th>
+              <th><span class="zh">取舍</span><span class="en">TRADE-OFFS</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="us">
+              <td class="who"><span class="zh">原生运行时 · 进程内</span><span class="en">Native in-process</span></td>
+              <td>L Shell</td>
+              <td><span class="zh">真实的 Node / Python 生态;AI CLI 在设备内运行;完全离线可用</span><span class="en">Real Node / Python ecosystems; the AI CLI runs on-device; fully offline</span></td>
+              <td><span class="zh">无法运行外部二进制;JS 无 JIT</span><span class="en">Can't run external binaries; JS runs without JIT</span></td>
+            </tr>
+            <tr>
+              <td class="who"><span class="zh">x86 用户态模拟</span><span class="en">x86 user-mode emulation</span></td>
+              <td>iSH</td>
+              <td><span class="zh">完整 Alpine / apk 生态,最接近真实 Linux 的语义</span><span class="en">Full Alpine / apk ecosystem; the closest thing to real Linux semantics</span></td>
+              <td><span class="zh">逐条指令翻译带来速度开销</span><span class="en">Per-instruction translation costs speed</span></td>
+            </tr>
+            <tr>
+              <td class="who"><span class="zh">WASM + 原生端口</span><span class="en">WASM + native ports</span></td>
+              <td>a-Shell</td>
+              <td><span class="zh">成熟稳定;系统集成深(快捷指令 / 文件);自带 TeX 等重型工具</span><span class="en">Mature and stable; deep system integration (Shortcuts / Files); ships heavyweights like TeX</span></td>
+              <td><span class="zh">没有 Node / npm 生态</span><span class="en">No Node / npm ecosystem</span></td>
+            </tr>
+            <tr>
+              <td class="who"><span class="zh">纯远程客户端</span><span class="en">Remote-first clients</span></td>
+              <td>Blink · Termius</td>
+              <td><span class="zh">远程体验的标杆:mosh、多设备漫游</span><span class="en">The benchmark for remote work: mosh, multi-device roaming</span></td>
+              <td><span class="zh">设备本身不运行代码</span><span class="en">The device itself runs no code</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="vs-foot"><span class="zh"># 基于各项目公开文档;四条路线服务不同用途,并无高下。L Shell 选原生路线,是为了让 AI CLI 与真实生态在设备内运行。</span><span class="en"># Based on each project's public docs; four approaches for different needs — none strictly better. L Shell goes native so the AI CLI and real ecosystems can live on the device.</span></p>
+    </section>
+
+    <!-- ═══════════ session (recording + live tty) ═══════════ -->
+    <section id="session">
+      <div class="rule"><h2>SESSION</h2><span class="sub"><span class="zh">真机会话</span><span class="en">on-device session</span></span></div>
+      <p class="sec-note"><span class="zh">以下命令均在真机验证;下面的提示符是活的,可以直接输入(试试 <b style="color:var(--amber)">help</b>)。</span><span class="en">Every command below is verified on a real device; the prompt underneath is live — type in it (try <b style="color:var(--amber)">help</b>).</span></p>
+
+      <div class="demo"><pre>
+<span class="p">$</span> <span class="c">pip3 install requests && python3 -c <span class="hl">'import requests; print(requests.get("https://api.github.com").status_code)'</span></span>
+<span class="o">200</span>
+<span class="p">$</span> <span class="c">git clone https://github.com/octocat/Hello-World && cd Hello-World</span>
+<span class="p">$</span> <span class="c">sshpass -p <span class="hl">'••••'</span> ssh dev@10.0.0.5 <span class="hl">"git pull && npm test"</span></span>   <span class="cm"># <span class="zh">标准密码认证</span><span class="en">standard password auth</span></span>
+<span class="p">$</span> <span class="c">ssh dev@10.0.0.5</span>                                    <span class="cm"># <span class="zh">交互式远程终端 → vim / top</span><span class="en">live remote terminal → vim / top</span></span>
+<span class="p">$</span> <span class="c">claude</span>                                              <span class="cm"># <span class="zh">AI 在这个仓库上工作</span><span class="en">the AI works on this repo</span></span></pre></div>
+
+      <div class="tty" id="tty">
+        <div class="tty-out" id="ttyOut"></div>
+        <div class="tty-row">
+          <span class="tty-ps">guest@lshell ~ $</span>
+          <input class="tty-input" id="ttyIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type help ↵" aria-label="interactive demo terminal" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ runtimes ═══════════ -->
+    <section id="runtimes">
+      <div class="rule"><h2>RUNTIMES</h2><span class="sub"><span class="zh">语言运行时</span><span class="en">language runtimes</span></span></div>
+      <p class="sec-note"><span class="zh">纯 JS / 原生嵌入,零外部进程。</span><span class="en">Pure JS / native embeds, zero external processes.</span></p>
+      <div class="man">
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name">node<i>(1)</i></span><span class="entry-meta">Node 18.19.1</span></div>
+          <p class="entry-desc"><span class="zh"><b>进程内 JS 执行</b>:<code>node file.js</code> / <code>-e</code> / <code>-p</code> / 管道 stdin;交互式 .js 程序同样可跑。</span><span class="en"><b>In-process JS execution</b>: <code>node file.js</code> / <code>-e</code> / <code>-p</code> / piped stdin; interactive .js programs run too.</span></p>
+        </div>
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name">git<i>(1)</i></span><span class="entry-meta">isomorphic-git · <span class="zh">24 个子命令</span><span class="en">24 subcommands</span></span></div>
+          <p class="entry-desc"><span class="zh">clone / fetch / pull / push 走 HTTPS + token 认证,可中断。</span><span class="en">clone / fetch / pull / push over HTTPS with token auth, interruptible.</span></p>
+          <p class="entry-list">init clone add rm mv commit status log diff rev-parse branch checkout merge tag reset restore show cat-file ls-files remote fetch pull push config</p>
+        </div>
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name">npm<i>(1)</i></span><span class="entry-meta"><span class="zh">进程内安装器</span><span class="en">in-process installer</span></span></div>
+          <p class="entry-desc"><span class="zh">从 registry 拉包、解压、安装完整依赖树 —— 不需要外部 npm 进程。</span><span class="en">Fetches from the registry, unpacks, installs full dependency trees — no external npm process.</span></p>
+          <p class="entry-list">install uninstall init ls run start test ci update outdated audit dedupe link exec …</p>
+        </div>
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name">python3<i>(1)</i></span><span class="entry-meta">CPython 3.13.14 · N-API · OpenSSL 3</span></div>
+          <p class="entry-desc"><span class="zh"><b>嵌入式 CPython</b>(非转译):153 个纯 py 标准库模块 + 68 个 C 扩展。</span><span class="en"><b>Embedded CPython</b> (not transpiled): 153 pure-py stdlib modules + 68 C extensions.</span></p>
+          <p class="entry-list">sqlite3 ssl socket hashlib json re datetime threading asyncio …</p>
+        </div>
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name">pip3<i>(1)</i></span><span class="entry-meta"><span class="zh">纯 Python wheel 安装器</span><span class="en">pure-Python wheel installer</span></span></div>
+          <p class="entry-desc"><span class="zh">从 PyPI 安装 <code>*-none-any.whl</code> 及其纯 py 依赖闭包(requests / rich / click / flask / pyyaml …);含 C/Rust 扩展的包返回明确的平台限制说明。</span><span class="en">Installs <code>*-none-any.whl</code> and their pure-py dependency closures from PyPI (requests / rich / click / flask / pyyaml …); packages with C/Rust extensions get a clear platform notice.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ ssh ═══════════ -->
+    <section id="ssh">
+      <div class="rule"><h2>SSH SUITE</h2><span class="sub"><span class="zh">远程套件</span><span class="en">remote suite</span></span></div>
+      <p class="sec-note"><span class="zh">ssh2 + node:crypto(原生 OpenSSL)—— 标准 OpenSSH 用法,无自创约定。</span><span class="en">ssh2 + node:crypto (native OpenSSL) — standard OpenSSH usage, no invented conventions.</span></p>
+      <div class="grp">
+        <div class="chips">
+          <button class="chip hot">ssh</button><button class="chip hot">sshpass</button>
+          <button class="chip">ssh-keygen</button><button class="chip">ssh-copy-id</button>
+          <button class="chip">scp</button><button class="chip">sftp</button>
+        </div>
+      </div>
+      <div class="man">
+        <div class="entry" style="border:0; padding-top:2px">
+          <p class="entry-desc" style="margin-top:0">
+            <span class="zh"><b>一次性命令</b>(<code>ssh host "cmd"</code>)· <b>交互式远程终端</b>(vim / top / tmux,UTF-8 无损)· 密码(<code>sshpass -p</code>)与公钥(ed25519 / rsa / ecdsa)认证 · keyboard-interactive 2FA · <code>~/.ssh/config</code> 别名 · known_hosts · ProxyJump 跳板 · SFTP 传输 · <code>ssh-copy-id</code> 一键免密。</span>
+            <span class="en"><b>One-shot commands</b> (<code>ssh host "cmd"</code>) · a <b>live interactive remote terminal</b> (vim / top / tmux, lossless UTF-8) · password (<code>sshpass -p</code>) and public-key (ed25519 / rsa / ecdsa) auth · keyboard-interactive 2FA · <code>~/.ssh/config</code> aliases · known_hosts · ProxyJump · SFTP transfer · one-command key deployment via <code>ssh-copy-id</code>.</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ coreutils as ls output ═══════════ -->
+    <section id="bin">
+      <div class="rule"><h2>COREUTILS</h2><span class="sub">ls /bin</span></div>
+      <p class="sec-note"><span class="zh">just-bash 内置 + 设备补齐;点击任意命令复制。</span><span class="en">just-bash builtins + device fills; click any command to copy.</span></p>
+      <div class="bin">
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>FILES</b> <span class="zh">文件与目录</span><span class="en">files &amp; directories</span></div>
+          <div class="cmdcols"><span class="cmd">ls</span><span class="cmd">cat</span><span class="cmd">cp</span><span class="cmd">mv</span><span class="cmd">rm</span><span class="cmd">mkdir</span><span class="cmd">rmdir</span><span class="cmd">ln</span><span class="cmd">touch</span><span class="cmd">chmod</span><span class="cmd">du</span><span class="cmd">df</span><span class="cmd">tree</span><span class="cmd">stat</span><span class="cmd">file</span><span class="cmd">readlink</span><span class="cmd">realpath</span><span class="cmd">basename</span><span class="cmd">dirname</span><span class="cmd">mktemp</span></div>
+        </div>
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>TEXT</b> <span class="zh">文本处理</span><span class="en">text processing</span></div>
+          <div class="cmdcols"><span class="cmd">grep</span><span class="cmd">egrep</span><span class="cmd">fgrep</span><span class="cmd">rg</span><span class="cmd">sed</span><span class="cmd">awk</span><span class="cmd">cut</span><span class="cmd">paste</span><span class="cmd">join</span><span class="cmd">sort</span><span class="cmd">uniq</span><span class="cmd">comm</span><span class="cmd">tr</span><span class="cmd">rev</span><span class="cmd">nl</span><span class="cmd">fold</span><span class="cmd">expand</span><span class="cmd">unexpand</span><span class="cmd">column</span><span class="cmd">head</span><span class="cmd">tail</span><span class="cmd">tac</span><span class="cmd">wc</span><span class="cmd">split</span><span class="cmd">tee</span><span class="cmd">strings</span></div>
+        </div>
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>DATA</b> <span class="zh">结构化数据 · 搜索</span><span class="en">structured data &amp; search</span></div>
+          <div class="cmdcols"><span class="cmd">jq</span><span class="cmd">yq</span><span class="cmd">xan</span><span class="cmd">find</span><span class="cmd">which</span><span class="cmd">base64</span><span class="cmd">xxd</span><span class="cmd">od</span><span class="cmd">html-to-markdown</span></div>
+        </div>
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>NET</b> <span class="zh">网络 · 哈希 · 压缩</span><span class="en">network · hashing · compression</span></div>
+          <div class="cmdcols"><span class="cmd">curl</span><span class="cmd">wget</span><span class="cmd">tar</span><span class="cmd">gzip</span><span class="cmd">gunzip</span><span class="cmd">zcat</span><span class="cmd">md5sum</span><span class="cmd">sha1sum</span><span class="cmd">sha256sum</span><span class="cmd">sha512sum</span><span class="cmd">shasum</span></div>
+        </div>
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>SYSTEM</b> <span class="zh">系统 · 环境</span><span class="en">system &amp; environment</span></div>
+          <div class="cmdcols"><span class="cmd">uname</span><span class="cmd">arch</span><span class="cmd">id</span><span class="cmd">nproc</span><span class="cmd">hostname</span><span class="cmd">whoami</span><span class="cmd">sw_vers</span><span class="cmd">date</span><span class="cmd">env</span><span class="cmd">printenv</span><span class="cmd">sleep</span><span class="cmd">time</span><span class="cmd">timeout</span><span class="cmd">xargs</span><span class="cmd">seq</span><span class="cmd">yes</span></div>
+        </div>
+        <div class="bin-grp">
+          <div class="bin-cm"># <b>BUILTIN</b> <span class="zh">内置 · 流程</span><span class="en">builtins &amp; flow</span></div>
+          <div class="cmdcols"><span class="cmd">cd</span><span class="cmd">pwd</span><span class="cmd">export</span><span class="cmd">alias</span><span class="cmd">history</span><span class="cmd">echo</span><span class="cmd">printf</span><span class="cmd">expr</span><span class="cmd">diff</span><span class="cmd">clear</span><span class="cmd">help</span><span class="cmd">bash</span><span class="cmd">sh</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ ai cli ═══════════ -->
+    <section id="ai">
+      <div class="rule"><h2>AI CLI</h2><span class="sub"><span class="zh">智能编码</span><span class="en">AI coding</span></span></div>
+      <div class="man" style="margin-top:14px">
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name" style="color:var(--green)">claude<i>(1)</i></span><span class="entry-meta"><span class="zh">官方 Claude Code · 未经改动 · 同进程</span><span class="en">official Claude Code · unmodified · same process</span></span></div>
+          <p class="entry-desc"><span class="zh">它的 Bash 工具直接调用本页所有本地命令与 SSH 套件 —— 在设备本地读改代码、跑 git、装依赖、连远程服务器。支持官方登录与第三方 API 端点。</span><span class="en">Its Bash tool calls every local command and the SSH suite on this page — reading and editing code, running git, installing dependencies, reaching remote servers, all on-device. Works with the official login and third-party API endpoints.</span></p>
+        </div>
+        <div class="entry">
+          <div class="entry-head"><span class="entry-name" style="color:var(--cyan); font-size:12.5px">COMPAT</span><span class="entry-meta"><span class="zh">其他 AI CLI 兼容性实测</span><span class="en">other AI CLIs, tested on device</span></span></div>
+          <p class="entry-desc">
+            <span class="zh">Gemini CLI、iFlow —— 已验证可运行(不预装)。Codex、Cline —— 依赖原生模块,暂不可运行。</span>
+            <span class="en">Gemini CLI and iFlow — verified running (not preinstalled). Codex and Cline — hard native-module dependencies, not runnable yet.</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ roadmap ═══════════ -->
+    <section id="roadmap">
+      <div class="rule"><h2>ROADMAP</h2><span class="sub"><span class="zh">进行中的方向</span><span class="en">directions in flight</span></span></div>
+      <p class="sec-note"><span class="zh">状态如实标注;不承诺时间线。</span><span class="en">Statuses are factual; no timelines promised.</span></p>
+      <div class="road">
+        <div class="road-item"><span class="tag tested"><span class="zh">已验证</span><span class="en">TESTED</span></span><span class="what"><span class="zh"><b>更多 AI CLI 适配</b> —— Gemini CLI / iFlow 已在真机跑通</span><span class="en"><b>More AI CLIs</b> — Gemini CLI / iFlow already run on device</span></span></div>
+        <div class="road-item"><span class="tag proto"><span class="zh">原型</span><span class="en">PROTOTYPE</span></span><span class="what"><span class="zh"><b>原生 spawn 桥 + 原生 grep/cat 系</b> —— native-bridge-poc 已验证可行</span><span class="en"><b>Native spawn bridge + native grep/cat family</b> — validated in native-bridge-poc</span></span></div>
+        <div class="road-item"><span class="tag plan"><span class="zh">计划</span><span class="en">PLANNED</span></span><span class="what"><span class="zh"><b>CRuby 原生端口</b> —— 复用 CPython 的嵌入模式</span><span class="en"><b>CRuby native port</b> — same embedding pattern as CPython</span></span></div>
+        <div class="road-item"><span class="tag research"><span class="zh">研究</span><span class="en">RESEARCH</span></span><span class="what"><span class="zh"><b>用户态 PTY</b> —— 以 iSH 的 tty 实现为蓝本</span><span class="en"><b>Userspace PTY</b> — modeled on iSH's tty implementation</span></span></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ limits ═══════════ -->
+    <section id="limits">
+      <div class="rule"><h2>LIMITS</h2><span class="sub"><span class="zh">平台边界</span><span class="en">platform boundaries</span></span></div>
+      <p class="sec-note"><span class="zh">iOS 硬约束,如实呈现 —— 调用返回清晰说明,而非模拟的成功。</span><span class="en">Hard iOS constraints, stated plainly — calls return a clear notice, not a simulated success.</span></p>
+      <div class="wall">
+        <div class="chips">
+          <span class="chip dead">npx</span><span class="chip dead">bun</span><span class="chip dead">deno</span><span class="chip dead">ruby</span><span class="chip dead">perl</span><span class="chip dead">php</span><span class="chip dead">go</span><span class="chip dead">rustc</span><span class="chip dead">cargo</span><span class="chip dead">java</span><span class="chip dead">gcc</span><span class="chip dead">make</span>
+        </div>
+        <p><span class="why">E_PLATFORM:</span> <span class="zh">iOS 禁止 <b>fork/exec</b>,jitless 运行时没有 <b>WebAssembly</b> —— 以上命令二者必需其一。文件可以创建和编辑,只是不能运行。</span><span class="en">iOS forbids <b>fork/exec</b>, and the jitless runtime has no <b>WebAssembly</b> — each of these needs one or the other. Files can be created and edited; they just can't run.</span></p>
+      </div>
+    </section>
+
+    <div class="colophon">
+      <b><span class="zh">底座</span><span class="en">Stack</span></b> nodejs-mobile (Node 18.19.1 · jitless V8) · CPython 3.13 N-API · isomorphic-git · just-bash · ssh2 + node:crypto · SwiftTerm<br>
+      <b><span class="zh">形态</span><span class="en">Form</span></b> <span class="zh">全部进程内 · 纯 JS / 原生嵌入 · 单一 App 沙盒 · 无越狱 · 无远程依赖</span><span class="en">everything in-process · pure JS / native embeds · one app sandbox · no jailbreak · no remote dependency</span>
+    </div>
+
+  </div><!-- /screen -->
+</div><!-- /session -->
+
+<div class="statusline" role="contentinfo">
+  <span class="seg name">lshell 1.0</span>
+  <span class="seg winlist" id="winlist" aria-hidden="true"></span>
+  <span class="seg right">native │ jitless │ 0-wasm</span>
+</div>
+
+<div class="toast" id="toast">copied</div>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+
+  /* ───── language: localStorage → navigator, statusline button toggles ───── */
+  function applyLang(l) { root.setAttribute('lang', l === 'en' ? 'en' : 'zh-CN'); }
+  function setLang(l) { applyLang(l); try { localStorage.setItem('lshell-lang', l); } catch (e) {} }
+  var savedLang = null;
+  try { savedLang = localStorage.getItem('lshell-lang'); } catch (e) {}
+  // No saved choice → follow the OS / browser language WITHOUT persisting, so a later
+  // system-language change is still picked up. A button click persists an explicit override.
+  if (savedLang === 'en' || savedLang === 'zh') applyLang(savedLang);
+  else applyLang((navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en');
+  var isEn = function () { return root.getAttribute('lang') === 'en'; };
+
+  /* ───── theme: top button + localStorage, follows system until first toggle ───── */
+  var themeIco = document.getElementById('themeIco');
+  function currentTheme() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t;
+    return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  function updateThemeIco() { if (themeIco) themeIco.textContent = currentTheme() === 'dark' ? '☾' : '☀'; }
+  function setTheme(t) {
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('lshell-theme', t); } catch (e) {}
+    updateThemeIco();
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('lshell-theme'); } catch (e) {}
+  if (savedTheme === 'dark' || savedTheme === 'light') root.setAttribute('data-theme', savedTheme);
+  updateThemeIco();
+  document.getElementById('themeTop').addEventListener('click', function () {
+    setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+  });
+  // While following the system (no explicit data-theme), keep the icon in sync when the OS
+  // light/dark setting changes live — the CSS re-themes via its media query automatically.
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    if (!root.getAttribute('data-theme')) updateThemeIco();
+  });
+  document.getElementById('langTop').addEventListener('click', function () {
+    setLang(isEn() ? 'zh' : 'en');
+  });
+
+  /* ───── copy-on-click: ssh chips + coreutils names ───── */
+  var toast = document.getElementById('toast'), toastTimer = null;
+  function copy(text) {
+    if (!(navigator.clipboard && navigator.clipboard.writeText)) return;
+    navigator.clipboard.writeText(text).then(function () {
+      toast.textContent = 'copied: ' + text;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1200);
+    }).catch(function () {});
+  }
+  document.querySelectorAll('button.chip:not(.dead), .cmd').forEach(function (el) {
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', function () { copy(el.textContent.trim()); });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') copy(el.textContent.trim()); });
+  });
+
+  /* ───── rule reveal on scroll ───── */
+  var rules = document.querySelectorAll('.rule');
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var ro = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('seen'); ro.unobserve(en.target); } });
+    }, { threshold: 0.4 });
+    rules.forEach(function (r) { ro.observe(r); });
+  } else {
+    rules.forEach(function (r) { r.classList.add('seen'); });
+  }
+
+  /* ───── scrollspy window list (tmux style) ───── */
+  var sections = ['native', 'session', 'runtimes', 'ssh', 'bin', 'ai', 'roadmap', 'limits'];
+  var winlist = document.getElementById('winlist');
+  winlist.innerHTML = sections.map(function (s, i) {
+    return '<span class="w" data-w="' + s + '">' + i + ':' + s + '</span>';
+  }).join('');
+  var wEls = {};
+  winlist.querySelectorAll('.w').forEach(function (el) { wEls[el.getAttribute('data-w')] = el; });
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var so = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          if (current) { current.classList.remove('on'); current.textContent = current.textContent.replace(/\*$/, ''); }
+          current = wEls[en.target.id];
+          if (current) { current.classList.add('on'); if (!/\*$/.test(current.textContent)) current.textContent += '*'; }
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    sections.forEach(function (s) { var el = document.getElementById(s); if (el) so.observe(el); });
+  }
+
+  /* ───── interactive tty (SESSION) ───── */
+  var out = document.getElementById('ttyOut');
+  var input = document.getElementById('ttyIn');
+  var tty = document.getElementById('tty');
+  var history = [], hIdx = -1;
+
+  function line(text, cls) {
+    var d = document.createElement('div');
+    d.className = 'l-' + (cls || 'out');
+    d.textContent = text;
+    out.appendChild(d);
+  }
+  function scrollBottom() { out.scrollTop = out.scrollHeight; }
+
+  // verbatim outputs from the actual device runtime — no fabrication
+  var UNAVAILABLE = { ruby: 'Ruby', go: 'Go', java: 'Java', perl: 'Perl', php: 'PHP', rustc: 'Rust', cargo: 'Rust', bun: 'a JS runtime', deno: 'a JS runtime', npx: 'Node.js' };
+  function unavailable(name) {
+    return name + ': not available on this device. This on-device shell has no ' + UNAVAILABLE[name] +
+      ' interpreter (jitless runtime, no WebAssembly) and cannot execute external programs. ' +
+      'Files can be created and edited here, but not run.';
+  }
+  function binList() {
+    var names = [];
+    document.querySelectorAll('#bin .cmd').forEach(function (el) { names.push(el.textContent.trim()); });
+    var width = 12, cols = 5, s = '', i;
+    for (i = 0; i < names.length; i++) {
+      s += names[i].length >= width ? names[i] + '  ' : names[i] + ' '.repeat(width - names[i].length);
+      if ((i + 1) % cols === 0) s += '\n';
+    }
+    return s;
+  }
+
+  function run(cmd) {
+    var trimmed = cmd.trim();
+    line(trimmed, 'in');
+    if (!trimmed) return;
+    history.push(trimmed); hIdx = history.length;
+    var parts = trimmed.split(/\s+/);
+    var name = parts[0];
+    var rest = parts.slice(1).join(' ');
+
+    switch (true) {
+      case name === 'help':
+        line(isEn()
+          ? 'this page speaks a few commands (outputs are verbatim from a real device):'
+          : '这个页面会说几条命令(输出与真机一字不差):', 'hint');
+        line('  ls /bin        node --version   python3 --version', 'out');
+        line('  pip3 --version git --version    uname -a', 'out');
+        line('  ssh            whoami           hostname', 'out');
+        line('  ruby | go | java   theme   lang   clear   exit', 'out');
+        break;
+      case name === 'ls':
+        line(binList(), 'out');
+        break;
+      case name === 'uname':
+        line(parts.indexOf('-a') > 0 ? 'Darwin iPhone 24.0.0 Darwin Kernel Version 24.0.0 arm64' : 'Darwin', 'out');
+        break;
+      case name === 'node' && (rest === '--version' || rest === '-v'):
+        line('v18.19.1', 'out'); break;
+      case (name === 'python3' || name === 'python') && rest === '--version':
+        line('Python 3.13.14', 'out'); break;
+      case (name === 'pip3' || name === 'pip') && (rest === '--version' || rest === '-V'):
+        line('pip 24.0 (l-shell pure-python front-end) from ~/.lshell/python/site-packages (python 3.13)', 'out'); break;
+      case name === 'git' && rest === '--version':
+        line('git version 2.43.0 (L Shell / isomorphic-git 1.38.6)', 'out'); break;
+      case name === 'ssh':
+        line('usage: ssh [-p port] [-i keyfile] [-l user] [-J jump] [-o k=v] [user@]host [command ...]', 'out'); break;
+      case name === 'sshpass':
+        line('usage: sshpass -p PASSWORD ssh [user@]host [command ...]', 'out'); break;
+      case name === 'whoami': line('mobile', 'out'); break;
+      case name === 'hostname': line('iPhone', 'out'); break;
+      case name === 'echo': line(rest, 'out'); break;
+      case name === 'history':
+        history.forEach(function (h, i) { line('  ' + (i + 1) + '  ' + h, 'out'); }); break;
+      case name in UNAVAILABLE:
+        line(unavailable(name), 'err'); break;
+      case name === 'gcc' || name === 'cc' || name === 'make':
+        line(name + ': not available on this device (no fork/exec — external binaries cannot run).', 'err'); break;
+      case name === 'claude':
+        line(isEn()
+          ? 'claude: Claude Code launches on the real device — this page only knows ~15 commands.'
+          : 'claude: Claude Code 要在真机上才能启动 —— 这个页面只会 15 条命令。', 'ok');
+        break;
+      case name === 'theme': {
+        var next = currentTheme() === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        line('theme: → ' + next, 'ok'); break;
+      }
+      case name === 'lang':
+        setLang(isEn() ? 'zh' : 'en');
+        line('lang: → ' + (isEn() ? 'English' : '中文'), 'ok'); break;
+      case name === 'en': setLang('en'); line('lang: → English', 'ok'); break;
+      case name === 'zh': setLang('zh'); line('lang: → 中文', 'ok'); break;
+      case name === 'clear': out.innerHTML = ''; break;
+      case name === 'exit' || name === 'logout':
+        line('(this is the root terminal — nothing to exit to; use the app switcher to leave)', 'hint'); break;
+      default:
+        line('bash: ' + name + ': command not found', 'err');
+        line(isEn() ? "try 'help'" : "输入 'help' 看看", 'hint');
+    }
+    scrollBottom();
+  }
+
+  // Track IME / predictive-text composition (Chinese pinyin, iOS QuickType, etc.).
+  // While composing, Enter must COMMIT the candidate in the keyboard — not run the
+  // half-typed value. Guarding on composing/isComposing/keyCode 229 fixes the bug where
+  // pressing Enter submitted the uncommitted "h l p e" instead of the aligned "help".
+  var composing = false;
+  input.addEventListener('compositionstart', function () { composing = true; });
+  input.addEventListener('compositionend', function () { composing = false; });
+  input.addEventListener('keydown', function (e) {
+    if (composing || e.isComposing || e.keyCode === 229) return; // let the keyboard commit first
+    if (e.key === 'Enter') { run(input.value); input.value = ''; }
+    else if (e.key === 'ArrowUp') { if (hIdx > 0) { hIdx--; input.value = history[hIdx] || ''; e.preventDefault(); } }
+    else if (e.key === 'ArrowDown') {
+      if (hIdx < history.length - 1) { hIdx++; input.value = history[hIdx] || ''; }
+      else { hIdx = history.length; input.value = ''; }
+      e.preventDefault();
+    }
+  });
+  // Focus the input on click for convenience — but NEVER while the user is selecting
+  // output text (getSelection non-empty) or clicking inside the output area, so they can
+  // freely select and copy commands/output. Stealing focus would collapse the selection.
+  tty.addEventListener('mousedown', function (e) {
+    if (e.target.closest && e.target.closest('.tty-out')) tty.dataset.selecting = '1';
+    else delete tty.dataset.selecting;
+  });
+  tty.addEventListener('click', function (e) {
+    if (e.target === input) return;
+    if (window.getSelection && String(window.getSelection()).length) return; // selecting → don't steal
+    if (tty.dataset.selecting) { delete tty.dataset.selecting; return; }      // click began in output
+    input.focus({ preventScroll: true });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="iconMask">
+      <rect width="1024" height="1024" rx="224" ry="224"/>
+    </clipPath>
+    <linearGradient id="bg" x1="82" y1="54" x2="930" y2="955" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFDF8"/>
+      <stop offset="0.52" stop-color="#F2EADF"/>
+      <stop offset="1" stop-color="#DED1C0"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="246" y1="178" x2="662" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#403D38"/>
+      <stop offset="0.56" stop-color="#252420"/>
+      <stop offset="1" stop-color="#11110F"/>
+    </linearGradient>
+    <linearGradient id="dot" x1="735" y1="637" x2="870" y2="774" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9770"/>
+      <stop offset="1" stop-color="#E35D45"/>
+    </linearGradient>
+    <filter id="markShadow" x="-25%" y="-25%" width="150%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#2A241D" flood-opacity="0.24"/>
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#2A241D" flood-opacity="0.16"/>
+    </filter>
+    <filter id="dotShadow" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="15" flood-color="#8F3B2D" flood-opacity="0.24"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#2A241D" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <g clip-path="url(#iconMask)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect x="34" y="34" width="956" height="956" rx="208" fill="none" stroke="#DACDBB" stroke-width="2" opacity="0.58"/>
+
+    <g filter="url(#markShadow)">
+      <path d="M254 204C254 170 274 150 308 150H388C422 150 442 170 442 204V616H660C694 616 714 636 714 670V744C714 778 694 798 660 798H308C274 798 254 778 254 744V204Z" fill="url(#mark)"/>
+      <path d="M308 150H388C422 150 442 170 442 204V616H660C694 616 714 636 714 670V744" fill="none" stroke="#615B52" stroke-width="4" stroke-linecap="round" opacity="0.38"/>
+      <path d="M288 726V218C288 202 298 192 314 192" fill="none" stroke="#0A0A09" stroke-width="5" stroke-linecap="round" opacity="0.36"/>
+    </g>
+
+    <g filter="url(#dotShadow)">
+      <rect x="772" y="652" width="124" height="124" rx="34" fill="url(#dot)"/>
+      <rect x="772" y="652" width="124" height="124" rx="34" fill="none" stroke="#FFB79E" stroke-width="4" opacity="0.34"/>
+      <rect x="789" y="669" width="90" height="90" rx="24" fill="none" stroke="#A23A2E" stroke-width="4" opacity="0.34"/>
+    </g>
+  </g>
+</svg>

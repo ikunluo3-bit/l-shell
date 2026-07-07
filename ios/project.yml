@@ -1,0 +1,79 @@
+# XcodeGen spec — generates ClaudeTerminal.xcodeproj.
+# Install XcodeGen (brew install xcodegen), then run scripts/bundle-runtime.sh and
+# `xcodegen generate` in this directory. See README.md.
+name: ClaudeTerminal
+options:
+  bundleIdPrefix: com.lshell.lyy
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+packages:
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    exactVersion: "1.13.0"
+
+targets:
+  ClaudeTerminal:
+    type: application
+    platform: iOS
+    sources:
+      - path: ClaudeTerminal
+      - path: ClaudeTerminal/Bridge/cpython   # CPython N-API bridge (cpython_bridge.c) compiled into the app
+      - path: Resources/nodejs
+        type: folder          # blue folder reference — whole tree copied into the bundle as "nodejs"
+      - path: Resources/python
+        type: folder          # blue folder reference — CPython PYTHONHOME copied into the bundle as "python"
+    dependencies:
+      - framework: Frameworks/NodeMobile.xcframework
+        embed: true
+        codeSign: true
+      - framework: Frameworks/Python.xcframework
+        embed: true
+        codeSign: true
+      - package: SwiftTerm
+    postBuildScripts:
+      - name: "Sign Python lib-dynload .so modules"
+        basedOnDependencyAnalysis: false
+        shell: /bin/bash
+        path: scripts/sign-dynload.sh
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lshell.lyy.claudeterminal
+        APP_DISPLAY_NAME: L Shell
+        INFOPLIST_FILE: ClaudeTerminal/Info.plist
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"      # iPhone + iPad
+        SWIFT_VERSION: "5.9"
+        ENABLE_BITCODE: NO
+        # nodejs-mobile embeds V8, which reserves a huge virtual address range for its
+        # heap cage. On a REAL device this is jetsam-killed (SIGKILL at node_start)
+        # without these entitlements; the simulator is exempt (hence terminal-only crash
+        # on device). Both work with free provisioning.
+        CODE_SIGN_ENTITLEMENTS: ClaudeTerminal/ClaudeTerminal.entitlements
+        OTHER_LDFLAGS: "-ObjC"
+        CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES: YES
+        # CPython bridge: N-API headers (Node 18.19.1) + Python.framework Headers.
+        # napi_* symbols are provided at link time by the embedded NodeMobile.framework;
+        # Python.framework is loaded dynamically (link needs Headers only).
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/ClaudeTerminal/Bridge/node-headers"
+          - "$(SRCROOT)/ClaudeTerminal/Bridge/cpython"
+          - "$(SRCROOT)/Frameworks/Python.xcframework/ios-arm64/Python.framework/Headers"
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - "$(inherited)"
+          - "NODE_GYP_MODULE_NAME=lshell_py"
+          - "NAPI_VERSION=8"
+        # Swift calls lshell_register_python() (C) before node_start; expose it.
+        SWIFT_OBJC_BRIDGING_HEADER: ClaudeTerminal/ClaudeTerminal-Bridging-Header.h
+      configs:
+        # Debug = the DEVELOPER build: distinct display name + bundle ID so it installs
+        # ALONGSIDE the release "L Shell" on-device and never collides with it. Release =
+        # the shippable "L Shell" (what we sync to the clean open-source source tree).
+        Debug:
+          APP_DISPLAY_NAME: L Shell Dev
+          PRODUCT_BUNDLE_IDENTIFIER: com.lshell.lyy.claudeterminal.dev
+        Release:
+          APP_DISPLAY_NAME: L Shell
+          PRODUCT_BUNDLE_IDENTIFIER: com.lshell.lyy.claudeterminal
