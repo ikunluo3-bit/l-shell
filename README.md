@@ -6,9 +6,11 @@
 
 A development terminal that runs **locally on iOS** — the first on-device implementation of **Claude Code**, and a complete dev environment: git, npm, Python, SSH, and an AI CLI, all in one process.
 
+### ★ Highly recommended — take the live tour
+
 [![Live Capabilities Tour](https://img.shields.io/badge/%E2%96%B6%20Live%20Capabilities%20Tour-f0a848?style=for-the-badge)](https://ikunluo3-bit.github.io/l-shell/)
 
-**An interactive, themed tour** — a live in-page terminal, the full command list, and the architecture. <sub>(source in [`docs/`](docs/))</sub>
+**An interactive, themed page** — a live in-page terminal, the full command list, and the architecture. The fastest way to see what L Shell does. <sub>(source in [`docs/`](docs/))</sub>
 
 <br>
 
