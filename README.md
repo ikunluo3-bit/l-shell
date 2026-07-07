@@ -13,13 +13,17 @@
 
 A development terminal that runs **locally on iOS** — the first on-device implementation of **Claude Code**, and a complete dev environment: git, npm, Python, SSH, and an AI CLI, all in one process.
 
+[![Live Capabilities Tour](https://img.shields.io/badge/%E2%96%B6%20Live%20Capabilities%20Tour-f0a848?style=for-the-badge)](https://ikunluo3-bit.github.io/l-shell/)
+
+**An interactive, themed tour** — a live in-page terminal, the full command list, and the architecture. <sub>(source in [`docs/`](docs/))</sub>
+
+<br>
+
 ![platform](https://img.shields.io/badge/platform-iOS%2018%2B-000000?style=flat-square)
 ![runtime](https://img.shields.io/badge/Node-18.19.1-3c873a?style=flat-square)
 ![python](https://img.shields.io/badge/CPython-3.13-4b8bbe?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-b06f22?style=flat-square)
 ![status](https://img.shields.io/badge/first%20on--device-Claude%20Code-f0a848?style=flat-square)
-
-[**▶ Live capabilities tour**](https://ikunluo3-bit.github.io/l-shell/) &nbsp;·&nbsp; served from [`docs/`](docs/) via GitHub Pages
 
 </div>
 

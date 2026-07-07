@@ -13,13 +13,17 @@
 
 一个**完全在 iOS 设备本地运行**的开发终端——**首个把 Claude Code 跑进设备**的实现,同时是一套完整的开发环境:git、npm、Python、SSH 和一个 AI CLI,全部在同一个进程内。
 
+[![在线能力总览](https://img.shields.io/badge/%E2%96%B6%20%E5%9C%A8%E7%BA%BF%E8%83%BD%E5%8A%9B%E6%80%BB%E8%A7%88-f0a848?style=for-the-badge)](https://ikunluo3-bit.github.io/l-shell/)
+
+**一个主题化的交互式展示**——页面内嵌活的终端、完整命令清单和架构。<sub>(源文件在 [`docs/`](docs/))</sub>
+
+<br>
+
 ![platform](https://img.shields.io/badge/platform-iOS%2018%2B-000000?style=flat-square)
 ![runtime](https://img.shields.io/badge/Node-18.19.1-3c873a?style=flat-square)
 ![python](https://img.shields.io/badge/CPython-3.13-4b8bbe?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-b06f22?style=flat-square)
 ![status](https://img.shields.io/badge/%E9%A6%96%E4%B8%AA%E8%AE%BE%E5%A4%87%E7%AB%AF-Claude%20Code-f0a848?style=flat-square)
-
-[**▶ 在线能力总览**](https://ikunluo3-bit.github.io/l-shell/) &nbsp;·&nbsp; 源文件在 [`docs/`](docs/),经 GitHub Pages 发布
 
 </div>
 
