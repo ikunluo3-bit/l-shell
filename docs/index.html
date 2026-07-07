@@ -85,6 +85,21 @@
   .ctl:hover, .ctl:focus-visible { color: var(--amber-hi); border-color: var(--amber); box-shadow: 0 0 10px var(--glow-soft); outline: none; }
   #themeIco { font-size: 12.5px; display: inline-block; line-height: 1; }
   @media (max-width: 520px) { .chrome-title { font-size: 10px; } }
+
+  /* ───────── GitHub CTA (强烈推荐) ───────── */
+  .gh-cta {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin: 24px 0 2px; padding: 12px 18px; text-decoration: none;
+    border: 1px solid var(--amber); border-radius: 8px;
+    background: color-mix(in srgb, var(--amber) 10%, transparent);
+    color: var(--amber-hi); font-size: 12.5px; font-weight: 700; text-align: center;
+    box-shadow: 0 0 18px var(--glow-soft); transition: background .15s, box-shadow .15s;
+  }
+  .gh-cta:hover { background: color-mix(in srgb, var(--amber) 18%, transparent); box-shadow: 0 0 26px var(--glow); }
+  .gh-cta b { color: var(--amber); }
+  .gh-cta .gh-star { color: var(--amber); font-size: 14px; }
+  .gh-cta .gh-arrow { transition: transform .15s; }
+  .gh-cta:hover .gh-arrow { transform: translateX(3px); }
   .screen {
     background: var(--panel); border: 1px solid var(--edge); border-radius: 0 0 10px 10px;
     padding: clamp(20px, 4vw, 42px) clamp(16px, 4vw, 42px) clamp(24px, 4vw, 40px);
@@ -355,6 +370,12 @@
         <p><span class="zh"><b>官方 Claude Code CLI</b>,在同一个终端里对本地与远程代码工作。</span><span class="en">The official <b>Claude Code CLI</b>, working on local and remote code from the same terminal.</span></p>
       </div>
     </div>
+
+    <a class="gh-cta" href="https://github.com/ikunluo3-bit/l-shell" target="_blank" rel="noopener">
+      <span class="gh-star">★</span>
+      <span class="zh"><b>强烈推荐</b> —— 开源于 GitHub,欢迎 Star &amp; 下载</span><span class="en"><b>Highly recommended</b> — open-source on GitHub, star &amp; download</span>
+      <span class="gh-arrow">→</span>
+    </a>
 
     <!-- ═══════════ native ═══════════ -->
     <section id="native">
