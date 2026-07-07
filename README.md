@@ -19,7 +19,7 @@ A development terminal that runs **locally on iOS** — the first on-device impl
 ![license](https://img.shields.io/badge/license-MIT-b06f22?style=flat-square)
 ![status](https://img.shields.io/badge/first%20on--device-Claude%20Code-f0a848?style=flat-square)
 
-[**▶ Live capabilities tour**](docs/index.html) &nbsp;·&nbsp; served from [`docs/`](docs/) via GitHub Pages
+[**▶ Live capabilities tour**](https://ikunluo3-bit.github.io/l-shell/) &nbsp;·&nbsp; served from [`docs/`](docs/) via GitHub Pages
 
 </div>
 
@@ -72,7 +72,7 @@ Under iOS's constraints, every terminal project picks a lane. L Shell chose nati
 | **~90 coreutils** | `grep rg sed awk jq yq curl wget tar find sort …` via [just-bash](https://www.npmjs.com/package/just-bash) + device fills |
 | **AI CLI** | `claude` (official Claude Code, unmodified) · Gemini CLI & iFlow verified running (not preinstalled) |
 
-**[→ Full interactive tour](docs/index.html)** — an on-page live terminal, the complete command list, and the architecture, in a themed capabilities site.
+**[→ Full interactive tour](https://ikunluo3-bit.github.io/l-shell/)** — an on-page live terminal, the complete command list, and the architecture, in a themed capabilities site.
 
 <div align="right"><a href="#table-of-contents">↑ top</a></div>
 
